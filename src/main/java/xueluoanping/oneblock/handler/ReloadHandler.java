@@ -2,7 +2,7 @@ package xueluoanping.oneblock.handler;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -13,10 +13,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.flag.FeatureElement;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import xueluoanping.oneblock.OneBlock;
 import xueluoanping.oneblock.api.StageData;
@@ -29,20 +28,10 @@ import java.util.Map;
 public class ReloadHandler {
     public static ReloadHandler instance = new ReloadHandler();
 
-    // @SubscribeEvent
-    // public void onLevelLoad(LevelEvent.Load event) {
-    // }
-    //
-    // @SubscribeEvent
-    // public void onLevelSave(LevelEvent.Save event) {
-    //
-    // }
-
     @SubscribeEvent
-    public void onAddReloadListener(AddReloadListenerEvent event) {
+    public void onAddReloadListener(AddServerReloadListenersEvent event) {
         // event.addListener(network.instance);
-        event.addListener(StageManager.instance2);
-
+        event.addListener(OneBlock.rl("oneblock"),StageManager.instance2);
     }
 
     @SubscribeEvent
@@ -51,20 +40,20 @@ public class ReloadHandler {
 
         dispatcher.register(
                 Commands.literal(OneBlock.MOD_ID)
-                        .requires((sourceStack) -> sourceStack.hasPermission(2))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("skip_to")
-                                .then(Commands.argument("stage", ResourceLocationArgument.id())
+                                .then(Commands.argument("stage", IdentifierArgument.id())
                                         .suggests((context, builder) -> {
                                             String pre = "";
                                             try {
-                                                pre = context.getArgument("stage", ResourceLocation.class).getPath();
+                                                pre = context.getArgument("stage", Identifier.class).getPath();
                                             } catch (IllegalArgumentException e) {
                                                 // e.printStackTrace();
                                             }
                                             String finalPre = pre;
                                             StageManager.STAGE_DATA_LIST
                                                     .stream()
-                                                    .map(stageData -> stageData.getResourceLocation() + "")
+                                                    .map(stageData -> stageData.getIdentifier() + "")
                                                     .filter(s -> s.contains(finalPre)).forEach(builder::suggest);
                                             return builder.buildFuture();
                                         })
@@ -75,18 +64,18 @@ public class ReloadHandler {
                                                     return builder.buildFuture();
                                                 })
                                                 .executes((stackCommandContext) ->
-                                                        skip_to_stage(stackCommandContext.getSource(), ResourceLocationArgument.getId(stackCommandContext, "stage"), BlockPosArgument.getLoadedBlockPos(stackCommandContext, "pos"))))))
+                                                        skip_to_stage(stackCommandContext.getSource(), IdentifierArgument.getId(stackCommandContext, "stage"), BlockPosArgument.getLoadedBlockPos(stackCommandContext, "pos"))))))
         );
         dispatcher.register(
                 Commands.literal(OneBlock.MOD_ID)
-                        .requires((sourceStack) -> sourceStack.hasPermission(2))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("set")
                                 .then(Commands.argument("pos", BlockPosArgument.blockPos()).executes((stackCommandContext) ->
                                         set_stage(stackCommandContext.getSource(), BlockPosArgument.getLoadedBlockPos(stackCommandContext, "pos")))))
         );
         dispatcher.register(
                 Commands.literal(OneBlock.MOD_ID)
-                        .requires((sourceStack) -> sourceStack.hasPermission(2))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("remove")
                                 .then(Commands.argument("pos", BlockPosArgument.blockPos())
                                         .suggests((context, builder) -> {
@@ -101,21 +90,21 @@ public class ReloadHandler {
         );
         dispatcher.register(
                 Commands.literal(OneBlock.MOD_ID)
-                        .requires((sourceStack) -> sourceStack.hasPermission(2))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("list_stage_info")
                                 .executes((stackCommandContext) ->
                                         list_stage(stackCommandContext.getSource()))));
 
         dispatcher.register(
                 Commands.literal(OneBlock.MOD_ID)
-                        .requires((sourceStack) -> sourceStack.hasPermission(2))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("export")
                                 .then(Commands.literal("all").executes((stackCommandContext) ->
                                         export_all(stackCommandContext.getSource())))
                         ));
         // dispatcher.register(
         //         Commands.literal(OneBlock.MOD_ID)
-        //                 .requires((sourceStack) -> sourceStack.hasPermission(2))
+        //                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
         //                 .then(Commands.literal("list")
         //                         .then(Commands.literal("block").executes(context -> 1))
         //                         .then(Commands.literal("item").executes(context -> 1))
@@ -131,7 +120,7 @@ public class ReloadHandler {
 
     private int export_all(CommandSourceStack source) {
         for (ResourceKey resourceKey : List.of(Registries.BLOCK, Registries.ITEM, Registries.ENTITY_TYPE)) {
-            for (Object entry : BuiltInRegistries.REGISTRY.getOrThrow(resourceKey).entrySet()) {
+            for (Object entry : ((Registry)BuiltInRegistries.REGISTRY.getOrThrow(resourceKey)).entrySet()) {
                 if (entry instanceof Map.Entry mapEntry) {
                     OneBlock.logger(mapEntry.getKey());
                 }
@@ -142,17 +131,17 @@ public class ReloadHandler {
 
     private int list_stage(CommandSourceStack source) {
         for (StageData stageData : StageManager.STAGE_DATA_LIST) {
-            var stringBuilder = Component.empty().append("Click to Copy " + stageData.getResourceLocation())
+            var stringBuilder = Component.empty().append("Click to Copy " + stageData.getIdentifier())
                     .withStyle((style) -> style
                             .withColor(TextColor.parseColor("#7FFF00").getOrThrow())
-                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.empty().append("Click it to copy")))
-                            .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, stageData.toString())));
+                            .withHoverEvent(new HoverEvent.ShowText( Component.empty().append("Click it to copy")))
+                            .withClickEvent(new ClickEvent.CopyToClipboard(stageData.toString())));
             ClientUtils.informPlayer(source.getServer(), stringBuilder);
         }
         return 1;
     }
 
-    private int skip_to_stage(CommandSourceStack source, ResourceLocation id, BlockPos pos) {
+    private int skip_to_stage(CommandSourceStack source, Identifier id, BlockPos pos) {
         int startPos = StageManager.getStageStartPos(id);
         OneBlock.logger(id, pos, startPos, source.getLevel());
         var save = Levelhandler.getSaveData(source.getLevel());

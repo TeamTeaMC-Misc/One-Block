@@ -6,9 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.*;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
@@ -39,11 +37,11 @@ public class BlockOne extends Block {
 
     // listen neighbour
     @Override
-    public BlockState updateShape(BlockState state, Direction direction, BlockState blockState, LevelAccessor accessor, BlockPos pos, BlockPos pos1) {
-        if (accessor instanceof ServerLevel serverLevel) {
+    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos, Direction directionToNeighbour, BlockPos neighbourPos, BlockState neighbourState, RandomSource random) {
+        if (level instanceof ServerLevel serverLevel) {
             serverLevel.scheduleTick(pos, this, 1);
         }
-        return super.updateShape(state, direction, blockState, accessor, pos, pos1);
+        return super.updateShape(state, level, ticks, pos, directionToNeighbour, neighbourPos, neighbourState, random);
     }
     // @Override
     // public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
@@ -76,10 +74,9 @@ public class BlockOne extends Block {
         }
     }
 
-
     @Override
-    public void fallOn(Level level, BlockState state, BlockPos pos, Entity entity, float v) {
-        super.fallOn(level, state, pos, entity, v);
+    public void fallOn(Level level, BlockState state, BlockPos pos, Entity entity, double fallDistance) {
+        super.fallOn(level, state, pos, entity, fallDistance);
         if (level instanceof ServerLevel serverLevel)
             this.tick(state, serverLevel, pos, level.getRandom());
     }

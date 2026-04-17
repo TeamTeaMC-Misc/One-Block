@@ -3,7 +3,7 @@ package xueluoanping.oneblock.api;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import xueluoanping.oneblock.ModConstants;
@@ -20,7 +20,7 @@ public class StageData {
     private int count;
     private List<BlockEntry> list;
     private String end_gift;
-    private ResourceLocation resourceLocation;
+    private Identifier resourceLocation;
     private String target;
     private List<String> mods;
 
@@ -88,11 +88,11 @@ public class StageData {
         this.end_gift = end_gift;
     }
 
-    public ResourceLocation getResourceLocation() {
+    public Identifier getIdentifier() {
         return resourceLocation;
     }
 
-    public void setResourceLocation(ResourceLocation resourceLocation) {
+    public void setIdentifier(Identifier resourceLocation) {
         this.resourceLocation = resourceLocation;
     }
 
@@ -216,7 +216,7 @@ public class StageData {
         private float chance;
 
         // from
-        private ResourceLocation from;
+        private Identifier from;
 
         @Override
         public String toString() {
@@ -424,11 +424,11 @@ public class StageData {
             this.chance = chance;
         }
 
-        public ResourceLocation getFrom() {
+        public Identifier getFrom() {
             return from;
         }
 
-        public void setFrom(ResourceLocation from) {
+        public void setFrom(Identifier from) {
             this.from = from;
         }
 

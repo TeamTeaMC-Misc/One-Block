@@ -13,7 +13,7 @@ public class StageProgress {
     // public static final String KEY_NAME="name";
 
     public StageProgress(String name, int counter) {
-        this(name, counter, 0, new ListTag(), new ListTag(),new ListTag());
+        this(name, counter, 0, new ListTag(), new ListTag(), new ListTag());
     }
 
     public StageProgress(String name, int counter, int bedrockLastTime, ListTag remainCounter, ListTag quotaCounter, ListTag precedenceCounter) {
@@ -43,8 +43,8 @@ public class StageProgress {
     public int getRemainAmount() {
         int amount = 0;
         for (int i = 0; i < this.remainCounter.size(); i++) {
-            var tag = this.remainCounter.getCompound(i);
-            amount += tag.getInt(KEY_COUNT);
+            var tag = this.remainCounter.getCompoundOrEmpty(i);
+            amount += tag.getIntOr(KEY_COUNT, 0);
         }
         return amount;
     }
@@ -82,12 +82,12 @@ public class StageProgress {
         var listTag = tagType == TAG_REMAIN ? this.remainCounter : this.quotaCounter;
         int removeIndex = -1;
         for (int i = 0; i < listTag.size(); i++) {
-            var tag = listTag.getCompound(i);
-            if (tag.getString(KEY_TYPE).equals(type)
-                    && tag.getString(KEY_ID).equals(id)) {
-                int count = tag.getInt(KEY_COUNT) - 1;
+            var tag = listTag.getCompoundOrEmpty(i);
+            if (tag.getStringOr(KEY_TYPE, "").equals(type)
+                    && tag.getStringOr(KEY_ID, "").equals(id)) {
+                int count = tag.getIntOr(KEY_COUNT, 0) - 1;
                 if (count > 0) {
-                    tag.putInt(KEY_COUNT, tag.getInt(KEY_COUNT) - 1);
+                    tag.putInt(KEY_COUNT, tag.getIntOr(KEY_COUNT, 0) - 1);
                 } else {
                     removeIndex = i;
                 }
@@ -112,9 +112,9 @@ public class StageProgress {
         var listTag = tagType == TAG_REMAIN ? this.remainCounter : this.quotaCounter;
         int index = -1;
         for (int i = 0; i < listTag.size(); i++) {
-            var tag = listTag.getCompound(i);
-            if (tag.getString(KEY_TYPE).equals(type)
-                    && tag.getString(KEY_ID).equals(id)) {
+            var tag = listTag.getCompoundOrEmpty(i);
+            if (tag.getStringOr(KEY_TYPE, "").equals(type)
+                    && tag.getStringOr(KEY_ID, "").equals(id)) {
                 index = i;
                 break;
             }
@@ -134,7 +134,7 @@ public class StageProgress {
         int index = indexOfQuota(type, id);
         boolean result = true;
         if (index >= 0) {
-            result = this.quotaCounter.getCompound(index).getInt(KEY_COUNT) > 0;
+            result = this.quotaCounter.getCompoundOrEmpty(index).getIntOr(KEY_COUNT, 0) > 0;
         }
         return result;
     }
@@ -142,13 +142,13 @@ public class StageProgress {
     public String checkPrecedence(int localCount) {
         String uid = null;
         for (int i = 0; i < precedenceCounter.size(); i++) {
-            var tag = precedenceCounter.getCompound(i);
-            int start = tag.getInt(KEY_START);
+            var tag = precedenceCounter.getCompoundOrEmpty(i);
+            int start = tag.getIntOr(KEY_START, 0);
             start = start != 0 ? start : Integer.MIN_VALUE;
-            int end = tag.getInt(KEY_END);
+            int end = tag.getIntOr(KEY_END, 0);
             end = end != 0 ? end : Integer.MAX_VALUE;
             if (start <= localCount && localCount <= end) {
-                uid = tag.getString(KEY_ID);
+                uid = tag.getStringOr(KEY_ID, "");
                 break;
             }
         }

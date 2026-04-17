@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.AbortableIterationConsumer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -186,7 +187,7 @@ public class Levelhandler {
                     // if (entity instanceof ItemEntity itemEntity)
                     {
                         itemEntity.syncPacketPositionCodec(x, y, z);
-                        itemEntity.moveTo(new Vec3(x, y, z));
+                        itemEntity.moveOrInterpolateTo(new Vec3(x, y, z));
                     }
                     return AbortableIterationConsumer.Continuation.CONTINUE;
                 });

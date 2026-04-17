@@ -7,7 +7,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.LootTable;
@@ -45,8 +45,8 @@ public class AddLootTableModifier extends AddTableLootModifier
 	protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
 		// if (Configuration.GENERATE_FD_CHEST_LOOT.get())
 		{
-			context.getResolver().get(Registries.LOOT_TABLE, this.lootTable).ifPresent((extraTable) -> {
-				extraTable.value().getRandomItemsRaw(context, createStackSplitter(context.getLevel(), generatedLoot::add));
+			context.getResolver().get(this.lootTable).ifPresent((extraTable) -> {
+				extraTable.value().getRandomItems(context, createStackSplitter(context.getLevel(), generatedLoot::add));
 			});
 		}
 		return generatedLoot;

@@ -1,0 +1,14 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "on_false": {
+      "type": "minecraft:model",
+      "model": "oneblock:item/fantasy_bracelet"
+    },
+    "on_true": {
+      "type": "minecraft:model",
+      "model": "oneblock:item/fantasy_bracelet_1"
+    },
+    "property": "minecraft:damaged"
+  }
+}

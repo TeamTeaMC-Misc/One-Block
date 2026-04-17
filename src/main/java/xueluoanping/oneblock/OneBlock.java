@@ -1,7 +1,7 @@
 package xueluoanping.oneblock;
 
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -48,24 +48,23 @@ public class OneBlock {
 
         NeoForge.EVENT_BUS.register(Levelhandler.instance);
         NeoForge.EVENT_BUS.register(ReloadHandler.instance);
-        NeoForge.EVENT_BUS.register(ReloadHandler.instance);
 
         // Register the item to a creative tab
         // modContainer.addListener(this::gatherData);
         // modContainer.addListener(this::FMLCommonSetup);
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, General.COMMON_CONFIG);
-        if (FMLLoader.getDist() == Dist.CLIENT)
+        if (FMLLoader.getCurrentOrNull().getDist() == Dist.CLIENT)
             modContainer.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }
 
 
-    public void gatherData(final GatherDataEvent event) {
+    public void gatherData(final GatherDataEvent.Client event) {
         start.dataGen(event);
     }
 
     public static void logger(Object... x) {
-        if (useLogger|| !FMLEnvironment.production) {
+        if (useLogger|| !FMLEnvironment.isProduction()) {
             LOGGER.info(getStr(x));
         }
     }
@@ -82,7 +81,7 @@ public class OneBlock {
         LOGGER.error(getStr(x));
     }
 
-    public static ResourceLocation rl(String name) {
-        return ResourceLocation.fromNamespaceAndPath(OneBlock.MOD_ID, name);
+    public static Identifier rl(String name) {
+        return Identifier.fromNamespaceAndPath(OneBlock.MOD_ID, name);
     }
 }

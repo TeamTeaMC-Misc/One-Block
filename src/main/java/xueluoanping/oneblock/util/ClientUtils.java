@@ -6,11 +6,13 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.network.chat.ResolutionContext;
+import net.minecraft.network.chat.contents.NbtContents;
 import net.minecraft.network.protocol.game.ClientboundClearTitlesPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.network.protocol.game.ClientboundStopSoundPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,15 +45,18 @@ public class ClientUtils {
 
         int count = 60; // 粒子数量
         for (ServerPlayer player : level.players()) {
-            level.sendParticles(player, particleOptions, false, pos.getX() + 0.5, pos.getY() + 2.5, pos.getZ() + 0.5, count, xSpeed, ySpeed, zSpeed, speedMultiplier);
+            level.sendParticles(player, particleOptions, false, false, pos.getX() + 0.5, pos.getY() + 2.5, pos.getZ() + 0.5, count, xSpeed, ySpeed, zSpeed, speedMultiplier);
         }
     }
 
     public static void informPlayer(MinecraftServer server, Component component) {
         try {
             for (ServerPlayer serverplayer : server.getPlayerList().getPlayers()) {
-                serverplayer.sendSystemMessage(ComponentUtils.updateForEntity(server.createCommandSourceStack(),
-                        component, serverplayer, 0), false);
+                serverplayer.sendSystemMessage(ComponentUtils.resolve(ResolutionContext.builder()
+                                .withSource(server.createCommandSourceStack())
+                                .withEntityOverride(serverplayer)
+                                .build(),
+                        component, 0), false);
             }
         } catch (CommandSyntaxException e) {
             e.printStackTrace();
@@ -85,19 +90,19 @@ public class ClientUtils {
 
     public static void playHEARTParticles(ServerLevel level, BlockPos pos) {
         for (ServerPlayer player : level.players()) {
-            level.sendParticles(player, ParticleTypes.HEART, false, pos.getX() + 0.5, pos.getY() + 2.5, pos.getZ() + 0.5, 30, 0.5, 0.7, 0.5, 0.05);
+            level.sendParticles(player, ParticleTypes.HEART, false, false, pos.getX() + 0.5, pos.getY() + 2.5, pos.getZ() + 0.5, 30, 0.5, 0.7, 0.5, 0.05);
         }
     }
 
     public static void playASHParticles(ServerLevel level, BlockPos pos) {
         for (ServerPlayer player : level.players()) {
-            level.sendParticles(player, ParticleTypes.ASH, false, pos.getX() + 0.5, pos.getY() + 1.8, pos.getZ() + 0.5, 3, 0.25, 0.05, 0.25, 0.01);
+            level.sendParticles(player, ParticleTypes.ASH, false, false, pos.getX() + 0.5, pos.getY() + 1.8, pos.getZ() + 0.5, 3, 0.25, 0.05, 0.25, 0.01);
         }
     }
 
     public static void playFireWorkParticles(ServerLevel level, BlockPos pos) {
         for (ServerPlayer player : level.players()) {
-            level.sendParticles(player, ParticleTypes.FIREWORK, false, pos.getX() + 0.5, pos.getY() + 2.2, pos.getZ() + 0.5, 120, 0.25, 0.05, 0.25, 0.05);
+            level.sendParticles(player, ParticleTypes.FIREWORK, false, false, pos.getX() + 0.5, pos.getY() + 2.2, pos.getZ() + 0.5, 120, 0.25, 0.05, 0.25, 0.05);
         }
     }
 
@@ -106,27 +111,27 @@ public class ClientUtils {
         float pitch = 1.0f;
         float minVolume = 0.0f;
         Vec3 vec3_base = basePos.getCenter();
-        Holder<SoundEvent> holder = Holder.direct(SoundEvent.createVariableRangeEvent( ResourceLocation.parse(select)));
+        Holder<SoundEvent> holder = Holder.direct(SoundEvent.createVariableRangeEvent(Identifier.parse(select)));
         SoundSource soundSource = SoundSource.BLOCKS;
         try {
             var values = SoundSource.values();
-            boolean found=false;
+            boolean found = false;
             for (SoundSource value : values) {
-                if (value.getName().equals(ResourceLocation.parse(select).getPath().split("\\.")[0])) {
+                if (value.getName().equals(Identifier.parse(select).getPath().split("\\.")[0])) {
                     soundSource = value;
-                    found=true;
+                    found = true;
                     break;
                 }
             }
-            if(!found)
-            throw new IllegalArgumentException("Not Found Category for " + select);
+            if (!found)
+                throw new IllegalArgumentException("Not Found Category for " + select);
         } catch (IllegalArgumentException e) {
             OneBlock.error(e.getMessage());
         }
         // Stop other music
-        if (soundSource==SoundSource.MUSIC){
-            ClientboundStopSoundPacket clientboundstopsoundpacket = new ClientboundStopSoundPacket(null,soundSource);
-            for(ServerPlayer serverplayer : level.players()) {
+        if (soundSource == SoundSource.MUSIC) {
+            ClientboundStopSoundPacket clientboundstopsoundpacket = new ClientboundStopSoundPacket(null, soundSource);
+            for (ServerPlayer serverplayer : level.players()) {
                 serverplayer.connection.send(clientboundstopsoundpacket);
             }
         }

@@ -21,7 +21,7 @@ public class Platform {
     }
 
     public static boolean isPhysicalClient() {
-        return FMLEnvironment.dist.isClient();
+        return FMLEnvironment.getDist().isClient();
     }
 
     public static MinecraftServer getServer() {
@@ -29,7 +29,7 @@ public class Platform {
     }
 
     public static boolean isProduction() {
-        return FMLEnvironment.production;
+        return FMLEnvironment.isProduction();
     }
 
     public static IModFile getModFile(String s) {

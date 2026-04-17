@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.packs.*;
 import net.minecraft.server.packs.repository.KnownPack;
 import net.minecraft.server.packs.repository.Pack;
@@ -43,19 +44,16 @@ public class ModContents {
 
     public static final DeferredHolder<Block, BlockOne> one_stone = BLOCK_DEFERRED_REGISTER.register("one_stone", () -> new BlockOne(BlockBehaviour.Properties.of()
             .strength(-1.0F, 3600000.8F).noLootTable().noTerrainParticles().pushReaction(PushReaction.BLOCK)
-            .sound(SoundType.AMETHYST).noOcclusion()));
-    // public static final RegistryObject<Item> itemBlock = DREntityBlockItems.register("one", () -> new BlockItem(fluiddrawer.get(), new Item.Properties()));
-    // public static final RegistryObject<BlockEntityType<BlockEntityOne>> tankTileEntityType = DRBlockEntities.register("one",
-    //         () ->  BlockEntityType.Builder.of(BlockEntityOne::new, fluiddrawer.get()).build( null));
+            .sound(SoundType.AMETHYST).noOcclusion().setId(ResourceKey.create(Registries.BLOCK,OneBlock.rl("fantasy_bracelet")))));
     public static final DeferredHolder<Item, FantasyBraceletItem> fantasy_bracelet = ITEM_DEFERRED_REGISTER.register("fantasy_bracelet",
-            () -> new FantasyBraceletItem(new Item.Properties().durability(1).setNoRepair()));
+            () -> new FantasyBraceletItem(new Item.Properties().durability(1).setNoCombineRepair().setId(ResourceKey.create(Registries.ITEM,OneBlock.rl("fantasy_bracelet")))));
 
     public static final DeferredHolder<MapCodec<? extends IGlobalLootModifier>, MapCodec<AddLootTableModifier>> ADD_LOOT_TABLE = LOOT_MODIFIERS.register("add_loot_table", AddLootTableModifier.CODEC::get);
 
     private static final PackSelectionConfig FEATURE_SELECTION_CONFIG = new PackSelectionConfig(true, Pack.Position.BOTTOM, false);
 
     public static KnownPack knowPack(String pName) {
-        return new KnownPack(OneBlock.MOD_ID, pName, SharedConstants.getCurrentVersion().getId());
+        return new KnownPack(OneBlock.MOD_ID, pName, SharedConstants.getCurrentVersion().dataVersion().toString());
     }
 
     public static void onAddPackFindersEvent(AddPackFindersEvent event) {

@@ -1,21 +1,26 @@
 package xueluoanping.oneblock.handler;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
+import com.google.gson.*;
 
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DynamicOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.FileToIdConverter;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
+import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
@@ -32,7 +37,7 @@ import xueluoanping.oneblock.util.Platform;
 
 
 // https://github.com/teaconmc/SignMeUp/blob/1.18-forge/src/main/java/org/teacon/signin/data/GuideMapManager.java
-public class StageManager extends SimpleJsonResourceReloadListener {
+public class StageManager extends SimplePreparableReloadListener<Map<Identifier, JsonElement>> {
     private static final Gson GSON = new GsonBuilder().setLenient()
             // .registerTypeHierarchyAdapter(Component.class, new Component.Serializer())
             .create();
@@ -43,16 +48,17 @@ public class StageManager extends SimpleJsonResourceReloadListener {
     public static boolean needCheck = false;
     public static OneBlockConfig oneBlockConfigHolder = new OneBlockConfig();
 
+
     record StageHolder(StageData data, boolean isBegin, boolean isEnd, int stageRemainCount) {
     }
 
-    public static int getStageStartPos(ResourceLocation resourceLocation) {
+    public static int getStageStartPos(Identifier resourceLocation) {
         // it means we set the first block
         int pos = 0;
         int size = STAGE_DATA_LIST.size();
         for (int i = 0; i < size; i++) {
             StageData stageData = STAGE_DATA_LIST.get(i);
-            if (i == size - 1 || stageData.getResourceLocation().compareTo(resourceLocation) == 0) {
+            if (i == size - 1 || stageData.getIdentifier().compareTo(resourceLocation) == 0) {
 
                 break;
             } else {
@@ -117,7 +123,7 @@ public class StageManager extends SimpleJsonResourceReloadListener {
         var block = Blocks.CHEST;
         level.setBlockAndUpdate(pos, block.defaultBlockState().setValue(ChestBlock.FACING, Direction.EAST));
         if (level.getBlockEntity(pos) instanceof RandomizableContainerBlockEntity entity)
-            entity.setLootTable(ResourceKey.create(Registries.LOOT_TABLE, ResourceLocation.parse(lootTable)), level.getSeed());
+            entity.setLootTable(ResourceKey.create(Registries.LOOT_TABLE, Identifier.parse(lootTable)), level.getSeed());
         ClientUtils.playHEARTParticles(level, pos);
     }
 
@@ -130,13 +136,36 @@ public class StageManager extends SimpleJsonResourceReloadListener {
     }
 
     public StageManager(Gson json, String s) {
-        super(json, s);
+        super();
         OneBlock.logger("data init");
     }
 
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> objects, ResourceManager manager, ProfilerFiller profiler) {
+    protected Map<Identifier, JsonElement> prepare(ResourceManager manager, ProfilerFiller profiler) {
+        HashMap<Identifier, JsonElement> objectObjectHashMap = new HashMap<>();
+        scanDirectory(manager, FileToIdConverter.json("oneblock"), objectObjectHashMap);
+        return objectObjectHashMap;
+    }
+
+    public static <T> void scanDirectory(
+            ResourceManager manager, FileToIdConverter lister, Map<Identifier, JsonElement> result
+    ) {
+        for (Map.Entry<Identifier, Resource> entry : lister.listMatchingResources(manager).entrySet()) {
+            Identifier location = entry.getKey();
+            Identifier id = lister.fileToId(location);
+
+            try (Reader reader = entry.getValue().openAsReader()) {
+                JsonElement jsonElement = JsonParser.parseReader(reader);
+                result.put(id, jsonElement);
+            } catch (IllegalArgumentException | IOException | JsonParseException var14) {
+                OneBlock.LOGGER.error("Couldn't parse data file '{}' from '{}'", id, location, var14);
+            }
+        }
+    }
+
+    @Override
+    protected void apply(Map<Identifier, JsonElement> objects, ResourceManager manager, ProfilerFiller profiler) {
         OneBlock.logger("Hello Profile");
         STAGE_DATA_LIST.clear();
         Gson gson = new GsonBuilder().create();
@@ -154,7 +183,7 @@ public class StageManager extends SimpleJsonResourceReloadListener {
                     if (!Platform.isModsLoaded(stageData.getMods()))
                         return;
                 }
-                stageData.setResourceLocation(res);
+                stageData.setIdentifier(res);
                 if (stageData.getTarget() == null)
                     new_list.add(stageData);
                 else additionalStageDataList.add(stageData);
@@ -168,7 +197,7 @@ public class StageManager extends SimpleJsonResourceReloadListener {
 
 
         // var sub_Stage=new_list.stream()
-        //         .filter(stageData1 -> stageData1.getResourceLocation().toString().equals(sub.getTarget()))
+        //         .filter(stageData1 -> stageData1.getIdentifier().toString().equals(sub.getTarget()))
         //         .findFirst();
         // add sub to STAGE_DATA_LIST
         var subStageMap = new LinkedHashMap<String, List<OneBlockSubConfig.Sub>>();
@@ -205,11 +234,11 @@ public class StageManager extends SimpleJsonResourceReloadListener {
 
 
         STAGE_DATA_LIST.addAll(new_list.stream()
-                .filter(stageData -> oneBlockConfigHolder.getOrder().contains(stageData.getResourceLocation().toString()))
+                .filter(stageData -> oneBlockConfigHolder.getOrder().contains(stageData.getIdentifier().toString()))
                 .toList());
         // sort
         STAGE_DATA_LIST.sort(Comparator.comparing(
-                e -> oneBlockConfigHolder.getOrder().indexOf(e.getResourceLocation().toString())
+                e -> oneBlockConfigHolder.getOrder().indexOf(e.getIdentifier().toString())
         ));
 
 
@@ -217,11 +246,11 @@ public class StageManager extends SimpleJsonResourceReloadListener {
         for (StageData additionalStage : additionalStageDataList) {
             for (StageData stage : STAGE_DATA_LIST) {
                 if (!stage.isDisable_addition()) {
-                    if (stage.getResourceLocation().toString().equals(additionalStage.getTarget())
-                            || oneBlockConfigHolder.matchSubWithAddition(stage.getResourceLocation().toString(), additionalStage.getTarget())
+                    if (stage.getIdentifier().toString().equals(additionalStage.getTarget())
+                            || oneBlockConfigHolder.matchSubWithAddition(stage.getIdentifier().toString(), additionalStage.getTarget())
                     ) {
                         for (StageData.BlockEntry subEntry : additionalStage.getList()) {
-                            subEntry.setFrom(additionalStage.getResourceLocation());
+                            subEntry.setFrom(additionalStage.getIdentifier());
                         }
                         stage.setCount(stage.getCount() + additionalStage.getAdd_count());
                         stage.getList().addAll(additionalStage.getList());
@@ -242,7 +271,7 @@ public class StageManager extends SimpleJsonResourceReloadListener {
                 boolean isValid = blockEntry.isValid(level);
                 if (!isValid) {
                     OneBlock.error("Skip error id found in ",
-                            blockEntry.getFrom() == null ? data.getResourceLocation() : blockEntry.getFrom()
+                            blockEntry.getFrom() == null ? data.getIdentifier() : blockEntry.getFrom()
                             , blockEntry);
                 }
                 return isValid;

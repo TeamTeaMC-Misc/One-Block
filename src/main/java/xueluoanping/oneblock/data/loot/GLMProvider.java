@@ -2,7 +2,7 @@ package xueluoanping.oneblock.data.loot;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 
 import net.neoforged.neoforge.common.data.GlobalLootModifierProvider;
@@ -25,26 +25,26 @@ public class GLMProvider extends GlobalLootModifierProvider {
 
         var cond = new LootItemCondition[7];
         for (int i = 4; i < 11; i++) {
-            cond[i - 4] = LootTableIdCondition.builder(ResourceLocation.fromNamespaceAndPath("ija-one-block", num(i) + variety)).build();
+            cond[i - 4] = LootTableIdCondition.builder(Identifier.fromNamespaceAndPath("ija-one-block", num(i) + variety)).build();
         }
 
 
         cond = new LootItemCondition[2];
         for (int i = 9; i < 11; i++) {
-            cond[i - 9] = LootTableIdCondition.builder(ResourceLocation.fromNamespaceAndPath("ija-one-block", num(i) + variety)).build();
+            cond[i - 9] = LootTableIdCondition.builder(Identifier.fromNamespaceAndPath("ija-one-block", num(i) + variety)).build();
         }
         this.add("add_loot_from_10", new AddLootTableModifier(cond,
                 RegisterFinderUtil.getLootTable(OneBlock.MOD_ID, "10")));
 
 
         this.add("add_loot_from_12", new AddLootTableModifier(new LootItemCondition[]{
-                LootTableIdCondition.builder(ResourceLocation.fromNamespaceAndPath("ija-one-block", num(10) + variety)).build()
+                LootTableIdCondition.builder(Identifier.fromNamespaceAndPath("ija-one-block", num(10) + variety)).build()
         }, RegisterFinderUtil.getLootTable(OneBlock.MOD_ID, "12")));
 
 
         cond = new LootItemCondition[7];
         for (int i = 4; i < 11; i++) {
-            cond[i - 4] = LootTableIdCondition.builder(ResourceLocation.fromNamespaceAndPath("ija-one-block", num(i) + variety)).build();
+            cond[i - 4] = LootTableIdCondition.builder(Identifier.fromNamespaceAndPath("ija-one-block", num(i) + variety)).build();
         }
         this.add("add_loot_from_copper", new AddLootTableModifier(cond,
                 RegisterFinderUtil.getLootTable(OneBlock.MOD_ID, "copper")));

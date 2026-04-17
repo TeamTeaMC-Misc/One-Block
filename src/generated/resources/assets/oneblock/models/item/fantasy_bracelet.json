@@ -1,13 +1,5 @@
 {
   "parent": "minecraft:item/generated",
-  "overrides": [
-    {
-      "model": "oneblock:item/fantasy_bracelet_1",
-      "predicate": {
-        "minecraft:damage": 1.0
-      }
-    }
-  ],
   "textures": {
     "layer0": "oneblock:item/fantasy_bracelet"
   }

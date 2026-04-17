@@ -1,5 +1,6 @@
 package xueluoanping.oneblock.config;
 
+import net.neoforged.fml.jarcontents.JarContents;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import xueluoanping.oneblock.OneBlock;
 import xueluoanping.oneblock.client.OneBlockTranslator;
@@ -78,27 +79,34 @@ public class General {
         // order = COMMON_BUILDER.comment("Set stage order.").
         // .define("Stage Order", "oneblock:phases/00;oneblock:phases/01;oneblock:phases/02;oneblock:phases/03;oneblock:phases/04;oneblock:phases/05;oneblock:phases/06;oneblock:phases/07;oneblock:phases/08;oneblock:phases/09;oneblock:phases/10;oneblock:phases/11;oneblock:phases/12;oneblock:phases/13;oneblock:phases/all");
         COMMON_BUILDER.comment("Compat settings").push("Compat");
-        var basePath = Platform.getModFile(OneBlock.MOD_ID).findResource("datapacks");
-        try (var fileList = Files.list(basePath)) {
-            fileList.forEach(
-                    path -> {
-                        var s = path.toString().split("oneblock-extra-");
-                        if (s.length > 1) {
-                            var packageName = s[1];
-                            if (Platform.isModLoaded(packageName)) {
-                                ModConfigSpec.BooleanValue enable =
-                                        COMMON_BUILDER
-                                                .comment(String.format("Enable compat package %s", packageName))
-                                                .translation(packageName)
-                                                .define(packageName, true);
-                                enableList.put(packageName, enable);
-                            }
+
+        JarContents jarContents = Platform.getModFile(OneBlock.MOD_ID).getContents();
+
+        jarContents.visitContent("datapacks", (relativePath, resource) -> {
+            String path = relativePath.replace("\\", "/");
+            if (path.endsWith("/pack.mcmeta")) {
+                String[] parts = path.substring("datapacks/".length()).split("/");
+                if (parts.length >= 2) {
+                    String part = parts[0];
+                    var s = part.split("oneblock-extra-");
+                    if (s.length > 1) {
+                        var packageName = s[1];
+                        if (enableList.containsKey(packageName))
+                            return;
+                        if (Platform.isModLoaded(packageName)) {
+                            ModConfigSpec.BooleanValue enable =
+                                    COMMON_BUILDER
+                                            .comment(String.format("Enable compat package %s", packageName))
+                                            .translation(packageName)
+                                            .define(packageName, true);
+                            enableList.put(packageName, enable);
                         }
                     }
-            );
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+                }
+            }
+        });
+
         COMMON_BUILDER.pop();
 
         COMMON_CONFIG = COMMON_BUILDER.build();

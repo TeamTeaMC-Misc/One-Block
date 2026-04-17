@@ -3,7 +3,7 @@ package xueluoanping.oneblock.Item;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -20,13 +20,13 @@ public class FantasyBraceletItem extends Item {
     }
 
     @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    public InteractionResult use(Level level, Player player, InteractionHand hand) {
         if (level instanceof ServerLevel serverLevel) {
             ItemStack itemstack = player.getItemInHand(hand);
 
             BlockHitResult hitresult = getPlayerPOVHitResult(serverLevel, player, ClipContext.Fluid.NONE);
             if (hitresult.getType() == HitResult.Type.MISS) {
-                return InteractionResultHolder.pass(itemstack);
+                return InteractionResult.PASS;
             } else {
                 if (hitresult.getType() == HitResult.Type.BLOCK) {
                     BlockPos pos = hitresult.getBlockPos();
@@ -50,9 +50,9 @@ public class FantasyBraceletItem extends Item {
 
                     // if (!player.isCreative())
                     //     player.setItemInHand(hand, itemstack);
-                    return InteractionResultHolder.success(itemstack);
+                    return InteractionResult.SUCCESS;
                 } else {
-                    return InteractionResultHolder.pass(itemstack);
+                    return InteractionResult.PASS;
                 }
             }
 
@@ -61,10 +61,11 @@ public class FantasyBraceletItem extends Item {
     }
 
 
-    @Override
-    public String getDescriptionId(ItemStack stack) {
-        if (stack.getDamageValue() == 1)
-            return super.getDescriptionId(stack) + "_1";
-        return super.getDescriptionId(stack);
-    }
+
+    // @Override
+    // public String getDescriptionId(ItemStack stack) {
+    //     if (stack.getDamageValue() == 1)
+    //         return super.getDescriptionId(stack) + "_1";
+    //     return super.getDescriptionId(stack);
+    // }
 }

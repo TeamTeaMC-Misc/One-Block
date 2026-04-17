@@ -1,67 +1,164 @@
 package xueluoanping.oneblock.api;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.*;
-import net.minecraft.server.packs.repository.Pack;
-import net.minecraft.server.packs.repository.PackSource;
-import net.minecraft.server.packs.resources.IoSupplier;
-import net.neoforged.neoforgespi.locating.IModFile;
-import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.*;
+import net.minecraft.server.packs.metadata.MetadataSectionType;
+import net.minecraft.server.packs.metadata.pack.PackFormat;
+import net.minecraft.server.packs.metadata.pack.PackMetadataSection;
+import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.resources.IoSupplier;
+import net.minecraft.server.packs.resources.ResourceMetadata;
+import net.minecraft.util.FileUtil;
+import net.minecraft.util.InclusiveRange;
+import net.minecraft.util.Util;
+import net.neoforged.neoforgespi.locating.IModFile;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import xueluoanping.oneblock.OneBlock;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-
-/*
- * Thanks Create MIT License
- * */
-public class ModFilePackResources extends PathPackResources implements PackResources, PackSource {
+public class ModFilePackResources extends AbstractPackResources {
     protected final IModFile modFile;
     protected final String sourcePath;
+    private final PackMetadataSection bindSection;
+    // private final URI root;
+    private final String packdir;
 
-    public ModFilePackResources(PackLocationInfo pLocation, IModFile modFile, String sourcePath) {
-        super(pLocation, modFile.findResource(sourcePath));
+    public ModFilePackResources(PackLocationInfo locationInfo, IModFile modFile, String sourcePath) {
+        super(locationInfo);
+        packdir = sourcePath.replace("\\", "/") + "/";
+        // URI not supported blank
+        // this.root = modFile.getContents().findFile(packdir+ "pack.mcmeta").get().resolve(".");
         this.modFile = modFile;
         this.sourcePath = sourcePath;
+        this.bindSection = new PackMetadataSection(locationInfo.title(),
+                InclusiveRange.create(PackFormat.of(0), PackFormat.of(100)).getOrThrow());
+    }
+
+    private @Nullable ResourceMetadata metadata;
+
+    @Override
+    public <T> @Nullable T getMetadataSection(MetadataSectionType<T> metadataSerializer) throws IOException {
+        if (this.metadata == null) {
+            this.metadata = loadMetadata(this);
+        }
+
+        return this.metadata.getSection(metadataSerializer).orElse(null);
     }
 
     @Override
-    public Component decorate(Component pName) {
-        return pName;
+    public void close() {
+
+    }
+
+    public static ResourceMetadata loadMetadata(PackResources packResources) throws IOException {
+        IoSupplier<InputStream> metadata = packResources.getRootResource("pack.mcmeta");
+        if (metadata == null) {
+            return ResourceMetadata.EMPTY;
+        } else {
+            // System.out.println(new String(metadata.get().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+            ResourceMetadata var3;
+            try (InputStream resource = metadata.get()) {
+                var3 = ResourceMetadata.fromJsonStream(resource);
+            }
+
+            return var3;
+        }
     }
 
     @Override
-    public boolean shouldAddAutomatically() {
-        return true;
-    }
-
-
-    // @Override
-    // protected Path resolve(String... paths) {
-    // 	String[] allPaths = new String[paths.length + 1];
-    // 	allPaths[0] = sourcePath;
-    // 	System.arraycopy(paths, 0, allPaths, 1, paths.length);
-    // 	return modFile.findResource(allPaths);
-    // }
-
-
-    @Override
-    public Set<String> getNamespaces(PackType pType) {
-        return super.getNamespaces(pType);
+    public @Nullable IoSupplier<InputStream> getRootResource(String... path) {
+        String relativePath = packdir + String.join("/", path);
+        return modFile.getContents().containsFile(relativePath)
+                ? () -> modFile.getContents().openFile(relativePath)
+                : null;
     }
 
     @Override
-    public @Nullable IoSupplier<InputStream> getRootResource(String... pElements) {
-        return super.getRootResource(pElements);
+    public @Nullable IoSupplier<InputStream> getResource(PackType type, Identifier location) {
+        return FileUtil.decomposePath(location.getPath()).mapOrElse(parts -> {
+            String relativePath = buildResourcePath(type, location.getNamespace(), parts);
+            return modFile.getContents().containsFile(relativePath)
+                    ? () -> modFile.getContents().openFile(relativePath)
+                    : null;
+        }, _ -> null);
     }
 
     @Override
-    public @Nullable IoSupplier<InputStream> getResource(PackType pPackType, ResourceLocation pLocation) {
-        return super.getResource(pPackType, pLocation);
+    public void listResources(PackType type, String namespace, String directory, ResourceOutput output) {
+        FileUtil.decomposePath(directory).ifSuccess(parts -> {
+            String namespaceRoot = type.getDirectory() + "/" + namespace + "/";
+            int startIndex = packdir.length() + namespaceRoot.length();
+            String scanPrefix = buildResourcePath(type, namespace, parts);
+
+            modFile.getContents().visitContent(scanPrefix, (relativePath, resource) -> {
+                if (!relativePath.contains(namespaceRoot)) {
+                    return;
+                }
+
+                if (!modFile.getContents().containsFile(relativePath)) {
+                    return;
+                }
+
+                String resourcePath = relativePath.substring(startIndex);
+                Identifier identifier = Identifier.tryBuild(namespace, resourcePath);
+                if (identifier == null) {
+                    Util.logAndPauseIfInIde(String.format(
+                            Locale.ROOT,
+                            "Invalid path in pack: %s:%s, ignoring",
+                            namespace,
+                            resourcePath
+                    ));
+                    return;
+                }
+
+                output.accept(identifier, () -> modFile.getContents().openFile(relativePath));
+            });
+        }).ifError(error -> OneBlock.LOGGER.error("Invalid path {}: {}", directory, error.message()));
+    }
+
+    @Override
+    public @NonNull Set<String> getNamespaces(PackType type) {
+        Set<String> namespaces = new HashSet<>();
+        String rootPrefix = packdir + type.getDirectory() + "/";
+
+        modFile.getContents().visitContent(rootPrefix, (relativePath, resource) -> {
+            if (!relativePath.contains(rootPrefix)) {
+                return;
+            }
+
+            if (!modFile.getContents().containsFile(relativePath)) {
+                return;
+            }
+
+            String rest = relativePath.substring(rootPrefix.length());
+            int slash = rest.indexOf('/');
+            if (slash <= 0) {
+                return;
+            }
+
+            String namespace = rest.substring(0, slash);
+            if (Identifier.isValidNamespace(namespace)) {
+                namespaces.add(namespace);
+            }
+        });
+        return namespaces;
+    }
+
+    private String buildResourcePath(PackType type, String namespace, List<String> parts) {
+        StringBuilder sb = new StringBuilder(packdir);
+        sb.append(type.getDirectory()).append('/').append(namespace);
+        for (String part : parts) {
+            if (!part.isEmpty()) {
+                sb.append('/').append(part);
+            }
+        }
+        return sb.toString();
     }
 
     public static class PathResourcesSupplier implements Pack.ResourcesSupplier {
@@ -74,16 +171,16 @@ public class ModFilePackResources extends PathPackResources implements PackResou
         }
 
         @Override
-        public ModFilePackResources openPrimary(PackLocationInfo pLocation) {
-            return new ModFilePackResources(pLocation,this.modFile, this.content.toString());
+        public @NonNull ModFilePackResources openPrimary(@NonNull PackLocationInfo pLocation) {
+            return new ModFilePackResources(pLocation, this.modFile, this.content.toString());
         }
 
         @Override
-        public ModFilePackResources openFull(PackLocationInfo pLocation, Pack.Metadata pMetadata) {
-            ModFilePackResources packresources = this.openPrimary(pLocation);
+        public @NonNull PackResources openFull(@NonNull PackLocationInfo pLocation, Pack.Metadata pMetadata) {
+            ModFilePackResources packResources = this.openPrimary(pLocation);
             List<String> list = pMetadata.overlays();
             if (list.isEmpty()) {
-                return packresources;
+                return packResources;
             } else {
                 List<PackResources> list1 = new ArrayList<>(list.size());
 

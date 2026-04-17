@@ -1,14 +1,17 @@
 package xueluoanping.oneblock.handler;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.world.level.storage.DimensionDataStorage;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 import xueluoanping.oneblock.OneBlock;
 import xueluoanping.oneblock.api.StageProgress;
 
@@ -20,34 +23,44 @@ import java.util.Set;
 // Todo: clean remain counter in future
 public class GlobalDataManager extends SavedData {
 
+    public static final SavedDataType<GlobalDataManager> TYPE = new SavedDataType<>(
+            OneBlock.rl("glbal_data"), _ -> new GlobalDataManager(), GlobalDataManager::makeCodec, DataFixTypes.LEVEL
+    );
+
+    private static Codec<GlobalDataManager> makeCodec(@Nullable ServerLevel level) {
+        return CompoundTag.CODEC.flatXmap(
+                tag -> DataResult.success(load(level, tag)),
+                data -> DataResult.success(data.save(new CompoundTag())));
+    }
+
     private final Map<BlockPos, StageProgress> chunkPosData = new HashMap<>();
 
-    private String hashStageVersion="";
+    private String hashStageVersion = "";
 
     public GlobalDataManager() {
     }
 
-    public GlobalDataManager(HolderLookup.Provider provider,CompoundTag tag) {
+    public GlobalDataManager(CompoundTag tag) {
 
-        ListTag list = tag.getList(OneBlock.MOD_ID, Tag.TAG_COMPOUND);
+        ListTag list = tag.getListOrEmpty(OneBlock.MOD_ID);
         for (Tag t : list) {
             CompoundTag manaTag = (CompoundTag) t;
-            BlockPos chunkPos = new BlockPos(manaTag.getInt("x"), manaTag.getInt("y"), manaTag.getInt("z"));
+            BlockPos chunkPos = new BlockPos(manaTag.getIntOr("x",0), manaTag.getIntOr("y",0), manaTag.getIntOr("z",0));
             var p = new StageProgress
-                    (manaTag.getString("name"), manaTag.getInt("counter"));
+                    (manaTag.getStringOr("name",""), manaTag.getIntOr("counter",0));
             if (manaTag.contains("bedrockLastTime"))
-                p.counter = manaTag.getInt("bedrockLastTime");
+                p.counter = manaTag.getIntOr("bedrockLastTime",0);
             if (manaTag.contains("remainCounter"))
-                p.remainCounter = manaTag.getList("remainCounter", ListTag.TAG_COMPOUND);
+                p.remainCounter = manaTag.getListOrEmpty("remainCounter");
             if (manaTag.contains("quotaCounter"))
-                p.quotaCounter = manaTag.getList("quotaCounter", ListTag.TAG_COMPOUND);
+                p.quotaCounter = manaTag.getListOrEmpty("quotaCounter");
             if (manaTag.contains("precedenceCounter"))
-                p.precedenceCounter = manaTag.getList("precedenceCounter", ListTag.TAG_COMPOUND);
+                p.precedenceCounter = manaTag.getListOrEmpty("precedenceCounter");
             chunkPosData.put(chunkPos, p);
         }
 
-        if (tag.contains("oneblockVersion")){
-            hashStageVersion=tag.getString("oneblockVersion");
+        if (tag.contains("oneblockVersion")) {
+            hashStageVersion = tag.getStringOr("oneblockVersion","");
         }
     }
 
@@ -83,8 +96,7 @@ public class GlobalDataManager extends SavedData {
         return chunkPosData.keySet();
     }
 
-    @Override
-    public @NotNull CompoundTag save(CompoundTag tag,HolderLookup.@NotNull Provider provider) {
+    public @NotNull CompoundTag save(CompoundTag tag) {
         ListTag list = new ListTag();
         chunkPosData.forEach((chunkPos, mana) -> {
             CompoundTag manaTag = new CompoundTag();
@@ -99,20 +111,17 @@ public class GlobalDataManager extends SavedData {
             list.add(manaTag);
         });
         tag.put(OneBlock.MOD_ID, list);
-        tag.putString("hashStageVersion","");
+        tag.putString("hashStageVersion", "");
         return tag;
     }
 
     public static GlobalDataManager get(ServerLevel serverLevel) {
-        DimensionDataStorage storage = serverLevel.getDataStorage();
-        return storage.computeIfAbsent(
-                new Factory<>(() -> create(serverLevel),
-                        ((compoundTag, provider) -> load(serverLevel, compoundTag, provider))),
-                OneBlock.MOD_ID);
+        var storage = serverLevel.getDataStorage();
+        return storage.computeIfAbsent(TYPE);
     }
 
-    private static GlobalDataManager load(ServerLevel serverLevel, CompoundTag compoundTag, HolderLookup.Provider provider) {
-        return new GlobalDataManager(serverLevel.registryAccess(),compoundTag);
+    private static GlobalDataManager load(ServerLevel serverLevel, CompoundTag compoundTag) {
+        return new GlobalDataManager(compoundTag);
     }
 
     private static GlobalDataManager create(ServerLevel serverLevel) {

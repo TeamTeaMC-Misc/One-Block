@@ -3,7 +3,7 @@ plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.0.165'
+    id 'net.neoforged.gradle.userdev' version '7.1.21'
 }
 
 
@@ -38,9 +38,6 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
-    maven {
-        url "https://harleyoconnor.com/maven"
-    }
 }
 
 base {
@@ -51,7 +48,7 @@ base {
 }
 
 // Mojang ships Java 21 to end users starting in 1.20.5, so mods should target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 //minecraft.accessTransformers.file rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
 //minecraft.accessTransformers.entry public net.minecraft.client.Minecraft textureManager # textureManager
@@ -90,19 +87,20 @@ runs {
 //        programArgument '--nogui'
     }
 
-    // This run config launches GameTestServer and runs all registered gametests, then exits.
-    // By default, the server will crash when no gametests are provided.
-    // The gametest system is also enabled by default for other run configs under the /test command.
-    gameTestServer {
-        systemProperty 'forge.enabledGameTestNamespaces', project.mod_id
-    }
-
-    data {
+    clientData {
         // example of overriding the workingDirectory set in configureEach above, uncomment if you want to use it
         // workingDirectory project.file('run-data')
 
         // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-        programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        arguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+    }
+
+    serverData {
+        // example of overriding the workingDirectory set in configureEach above, uncomment if you want to use it
+        // workingDirectory project.file('run-data')
+
+        // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+        arguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/server_resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
     }
 }
 
@@ -132,37 +130,11 @@ dependencies {
 //    onlyMainRuntimeOnly ("curse.maven:skyblock-builder-446691:5291035")
 //    onlyMainRuntimeOnly ("curse.maven:libx-412525:5207625")
 
-    implementation ("curse.maven:jei-238222:5846880")
-    implementation("curse.maven:jade-324717:5591256-deobf-sources-api")
+    implementation "maven.modrinth:sodium:mc26.1.1-0.8.9-neoforge"
+    implementation "maven.modrinth:iris:1.10.9+26.1-neoforge"
+	implementation "curse.maven:jade-324717:7817285"
+	
 
-    onlyMainRuntimeOnly("curse.maven:irisshaders-455508:5910090")
-    onlyMainRuntimeOnly "maven.modrinth:sodium:mc1.21.1-0.6.0-neoforge"
-    onlyMainRuntimeOnly("curse.maven:journeymap-32274:5541925")
-
-
-//    runtimeOnly ("curse.maven:spark-361579:5434153")
-    
-    // Example optional mod dependency with JEI
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
-    // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
-
-    // Example mod dependency using a mod jar from ./libs with a flat dir repository
-    // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
-    // The group id is ignored when searching -- in this case, it is "blank"
-    // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
-
-    // Example mod dependency using a file as dependency
-    // implementation files("libs/coolmod-${mc_version}-${coolmod_version}.jar")
-
-    // Example project dependency using a sister or child project:
-    // implementation project(":myproject")
-
-    // For more info:
-    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
-    // http://www.gradle.org/docs/current/userguide/dependency_management.html
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
