@@ -34,12 +34,12 @@ public class GLMProvider extends GlobalLootModifierProvider {
             cond[i - 9] = LootTableIdCondition.builder(Identifier.fromNamespaceAndPath("ija-one-block", num(i) + variety)).build();
         }
         this.add("add_loot_from_10", new AddLootTableModifier(cond,
-                RegisterFinderUtil.getLootTable(OneBlock.MOD_ID, "10")));
+                1000,RegisterFinderUtil.getLootTable(OneBlock.MOD_ID, "10")));
 
 
         this.add("add_loot_from_12", new AddLootTableModifier(new LootItemCondition[]{
                 LootTableIdCondition.builder(Identifier.fromNamespaceAndPath("ija-one-block", num(10) + variety)).build()
-        }, RegisterFinderUtil.getLootTable(OneBlock.MOD_ID, "12")));
+        }, 1000,RegisterFinderUtil.getLootTable(OneBlock.MOD_ID, "12")));
 
 
         cond = new LootItemCondition[7];
@@ -47,7 +47,7 @@ public class GLMProvider extends GlobalLootModifierProvider {
             cond[i - 4] = LootTableIdCondition.builder(Identifier.fromNamespaceAndPath("ija-one-block", num(i) + variety)).build();
         }
         this.add("add_loot_from_copper", new AddLootTableModifier(cond,
-                RegisterFinderUtil.getLootTable(OneBlock.MOD_ID, "copper")));
+                1000,RegisterFinderUtil.getLootTable(OneBlock.MOD_ID, "copper")));
     }
 
 

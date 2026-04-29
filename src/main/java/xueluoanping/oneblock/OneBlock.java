@@ -35,6 +35,7 @@ public class OneBlock {
 
         // modEventBus.register(ControllerFluidCapabilityHandler.instance);
         modEventBus.addListener(this::gatherData);
+        modEventBus.addListener(start::dataGen1);
         modEventBus.addListener(ModContents::onAddPackFindersEvent);
 
         // Register the Deferred Register to the mod event bus so blocks get registered
