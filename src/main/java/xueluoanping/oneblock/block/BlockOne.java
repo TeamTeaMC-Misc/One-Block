@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import xueluoanping.oneblock.OneBlock;
+import xueluoanping.oneblock.api.StageProgress;
 import xueluoanping.oneblock.handler.Levelhandler;
 import xueluoanping.oneblock.util.ClientUtils;
 
@@ -68,10 +69,16 @@ public class BlockOne extends Block {
             OneBlock.logger(pos, "Loading a stage");
             var save = Levelhandler.getSaveData(level);
             save.remove(pos);
-            save.update(pos, save.getOrDefault(pos));
+            StageProgress orDefault = save.getOrDefault(pos);
+            save.update(pos, orDefault);
             level.removeBlock(pos, false);
             ClientUtils.playFireWorkParticles(level, pos);
         }
+    }
+
+    @Override
+    protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        tick(state,level,pos,random);
     }
 
     @Override

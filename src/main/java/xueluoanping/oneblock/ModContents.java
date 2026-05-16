@@ -13,6 +13,7 @@ import net.minecraft.world.item.Item;
 
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.material.PushReaction;
 
 import net.minecraft.world.level.block.Block;
@@ -29,6 +30,7 @@ import xueluoanping.oneblock.block.BlockOne;
 import xueluoanping.oneblock.config.General;
 import xueluoanping.oneblock.loot.modifier.AddLootTableModifier;
 import xueluoanping.oneblock.util.Platform;
+import xueluoanping.oneblock.worldgen.OneBlockChunkGenerator;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -44,11 +46,18 @@ public class ModContents {
 
     public static final DeferredHolder<Block, BlockOne> one_stone = BLOCK_DEFERRED_REGISTER.register("one_stone", () -> new BlockOne(BlockBehaviour.Properties.of()
             .strength(-1.0F, 3600000.8F).noLootTable().noTerrainParticles().pushReaction(PushReaction.BLOCK)
+            .randomTicks()
             .sound(SoundType.AMETHYST).noOcclusion().setId(ResourceKey.create(Registries.BLOCK,OneBlock.rl("fantasy_bracelet")))));
     public static final DeferredHolder<Item, FantasyBraceletItem> fantasy_bracelet = ITEM_DEFERRED_REGISTER.register("fantasy_bracelet",
             () -> new FantasyBraceletItem(new Item.Properties().durability(1).setNoCombineRepair().setId(ResourceKey.create(Registries.ITEM,OneBlock.rl("fantasy_bracelet")))));
 
     public static final DeferredHolder<MapCodec<? extends IGlobalLootModifier>, MapCodec<AddLootTableModifier>> ADD_LOOT_TABLE = LOOT_MODIFIERS.register("add_loot_table", AddLootTableModifier.CODEC::get);
+
+    public static final DeferredRegister<MapCodec<? extends ChunkGenerator>> CHUNK_GENERATORS =
+            DeferredRegister.create(Registries.CHUNK_GENERATOR, OneBlock.MOD_ID);
+
+    public static final DeferredHolder<MapCodec<? extends ChunkGenerator>, MapCodec<OneBlockChunkGenerator>> VOID_BIOMES =
+            CHUNK_GENERATORS.register("void_biomes", () -> OneBlockChunkGenerator.CODEC);
 
     private static final PackSelectionConfig FEATURE_SELECTION_CONFIG = new PackSelectionConfig(true, Pack.Position.BOTTOM, false);
 

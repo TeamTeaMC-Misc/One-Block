@@ -169,7 +169,7 @@ dependencies {
 //    onlyMainRuntimeOnly ("curse.maven:skyblock-builder-446691:5291035")
 //    onlyMainRuntimeOnly ("curse.maven:libx-412525:5207625")
 
-    implementation "maven.modrinth:sodium:mc26.1.1-0.8.9-neoforge"
+    implementation "maven.modrinth:sodium:mc26.1.2-0.8.11-neoforge"
     implementation "maven.modrinth:iris:1.10.9+26.1-neoforge"
 	implementation "curse.maven:jade-324717:7817285"
 	

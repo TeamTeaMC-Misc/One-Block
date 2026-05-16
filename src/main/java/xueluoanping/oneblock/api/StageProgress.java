@@ -1,7 +1,10 @@
 package xueluoanping.oneblock.api;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+
+import java.util.*;
 
 public class StageProgress {
     public static final String KEY_NAME = "name";
@@ -11,6 +14,59 @@ public class StageProgress {
     public static final String KEY_START = "start";
     public static final String KEY_END = "end";
     // public static final String KEY_NAME="name";
+    public final Map<String, Set<String>> oldEntries = new HashMap<>();
+    public Set<String> getOldEntries(String s) {
+        return oldEntries.computeIfAbsent(s, s1 -> new LinkedHashSet<>());
+    }
+
+    protected UUID teamId;
+    protected UUID owner;
+    protected final Set<UUID> members = new LinkedHashSet<>();
+    protected BlockPos spawnPos;
+
+    public boolean hasTeam() {
+        return teamId != null;
+    }
+
+    public boolean isMember(UUID playerId) {
+        return members.contains(playerId);
+    }
+
+    public void addMember(UUID playerId) {
+        members.add(playerId);
+    }
+
+    public void removeMember(UUID playerId) {
+        members.remove(playerId);
+    }
+
+    public Set<UUID> getMembers() {
+        return members;
+    }
+
+    public UUID getTeamId() {
+        return teamId;
+    }
+
+    public void setTeamId(UUID teamId) {
+        this.teamId = teamId;
+    }
+
+    public UUID getOwner() {
+        return owner;
+    }
+
+    public void setOwner(UUID owner) {
+        this.owner = owner;
+    }
+
+    public BlockPos getSpawnPos() {
+        return spawnPos;
+    }
+
+    public void setSpawnPos(BlockPos spawnPos) {
+        this.spawnPos = spawnPos;
+    }
 
     public StageProgress(String name, int counter) {
         this(name, counter, 0, new ListTag(), new ListTag(), new ListTag());

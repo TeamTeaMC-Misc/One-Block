@@ -18,7 +18,7 @@ import org.apache.logging.log4j.Logger;
 import xueluoanping.oneblock.config.General;
 import xueluoanping.oneblock.data.start;
 import xueluoanping.oneblock.handler.Levelhandler;
-import xueluoanping.oneblock.handler.ReloadHandler;
+import xueluoanping.oneblock.handler.CommonSetUp;
 
 import java.util.Objects;
 
@@ -42,13 +42,14 @@ public class OneBlock {
         ModContents.BLOCK_DEFERRED_REGISTER.register(modEventBus);
         ModContents.ITEM_DEFERRED_REGISTER.register(modEventBus);
         ModContents.LOOT_MODIFIERS.register(modEventBus);
+        ModContents.CHUNK_GENERATORS.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (ExampleMod) to respond directly to events.
         // Do not add this line if there are no @SubscribeEvent-annotated functions in this class, like onServerStarting() below.
 
         NeoForge.EVENT_BUS.register(Levelhandler.instance);
-        NeoForge.EVENT_BUS.register(ReloadHandler.instance);
+        NeoForge.EVENT_BUS.register(CommonSetUp.instance);
 
         // Register the item to a creative tab
         // modContainer.addListener(this::gatherData);

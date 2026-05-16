@@ -1,9 +1,11 @@
 package xueluoanping.oneblock.Item;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -12,6 +14,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import xueluoanping.oneblock.ModContents;
+import xueluoanping.oneblock.api.StageProgress;
+import xueluoanping.oneblock.handler.CommonSetUp;
+import xueluoanping.oneblock.handler.GlobalDataManager;
 import xueluoanping.oneblock.handler.Levelhandler;
 
 public class FantasyBraceletItem extends Item {
@@ -30,9 +35,9 @@ public class FantasyBraceletItem extends Item {
             } else {
                 if (hitresult.getType() == HitResult.Type.BLOCK) {
                     BlockPos pos = hitresult.getBlockPos();
-                    var save = Levelhandler.getSaveData(serverLevel);
+                    var data = Levelhandler.getSaveData(serverLevel);
                     if (itemstack.getDamageValue() != 0) {
-                        var oldPos = save.remove(pos);
+                        var oldPos = data.remove(pos);
                         if (oldPos != null) {
                             if (!player.isCreative())
                                 itemstack.setDamageValue(0);
@@ -40,12 +45,32 @@ public class FantasyBraceletItem extends Item {
                         }
 
                     } else {
-                        if (!player.isCreative())
-                            itemstack.setDamageValue(1);
                         // save.remove(pos);
                         // save.update(pos, save.getOrDefault(pos));
                         // level.removeBlock(pos, false);
-                        level.setBlockAndUpdate(pos, ModContents.one_stone.get().defaultBlockState());
+                        // level.setBlockAndUpdate(pos, ModContents.one_stone.get().defaultBlockState());
+                        if (data.hasTeam(player.getUUID())) {
+                            player.sendSystemMessage(Component.translatable("message.oneblock.team.already_in_team"));
+                            return InteractionResult.FAIL;
+                        }
+
+                        if (CommonSetUp.isTooCloseToOtherTeams(pos, data)) {
+                            player.sendSystemMessage(Component.translatable(
+                                    "commands.oneblock.create.too_close",
+                                    CommonSetUp.MIN_TEAM_DISTANCE
+                            ));
+                            return InteractionResult.PASS;
+                        }
+
+                        StageProgress progress = data.createTeam(player.getUUID(), pos);
+                        if (progress == null) {
+                            player.sendSystemMessage(Component.translatable("message.oneblock.team.create_failed"));
+                            return InteractionResult.FAIL;
+                        }
+                        if (!player.isCreative()) {
+                            itemstack.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
+                        }
+                        player.sendSystemMessage(Component.translatable("message.oneblock.team.created"));
                     }
 
                     // if (!player.isCreative())
@@ -59,7 +84,6 @@ public class FantasyBraceletItem extends Item {
         }
         return super.use(level, player, hand);
     }
-
 
 
     // @Override

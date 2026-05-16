@@ -1,26 +1,32 @@
 package xueluoanping.oneblock.handler;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.AbortableIterationConsumer;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import xueluoanping.oneblock.OneBlock;
 import xueluoanping.oneblock.api.StageData;
+import xueluoanping.oneblock.api.StageProgress;
 import xueluoanping.oneblock.config.General;
 import xueluoanping.oneblock.util.ClientUtils;
+import xueluoanping.oneblock.util.NewEntryUtils;
 
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 // @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.DEDICATED_SERVER)
@@ -33,7 +39,7 @@ public class Levelhandler {
 
     public static GlobalDataManager getSaveData(ServerLevel level) {
         GlobalDataManager globalDataManager = oneBlockSaveHolder.get(level);
-        if(globalDataManager==null){
+        if (globalDataManager == null) {
             OneBlock.LOGGER.error("Null One Block Level Data from Level : {}", level);
         }
         return globalDataManager != null ?
@@ -42,11 +48,11 @@ public class Levelhandler {
 
     @SubscribeEvent
     public void onLevelLoad(LevelEvent.Load event) {
-        if (!event.getLevel().isClientSide()  && event.getLevel() instanceof ServerLevel serverLevel)
+        if (!event.getLevel().isClientSide() && event.getLevel() instanceof ServerLevel serverLevel)
             oneBlockSaveHolder.putIfAbsent(serverLevel, GlobalDataManager.get(serverLevel));
-            // for (ServerLevel allLevel : event.getLevel().getServer().getAllLevels()) {
-            //     oneBlockSaveHolder.putIfAbsent(allLevel, GlobalDataManager.get(allLevel));
-            // }
+        // for (ServerLevel allLevel : event.getLevel().getServer().getAllLevels()) {
+        //     oneBlockSaveHolder.putIfAbsent(allLevel, GlobalDataManager.get(allLevel));
+        // }
     }
 
 
@@ -58,6 +64,19 @@ public class Levelhandler {
         {
             oneBlockSaveHolder.remove(serverLevel);
         }        // oneBlockSave = null;
+    }
+
+    @SubscribeEvent
+    public void onTick(LevelTickEvent.Pre event) {
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            var oneBlockSave = getSaveData(serverLevel);
+            for (BlockPos pos : oneBlockSave.getBlockPos()) {
+                if (serverLevel.isLoaded(pos)
+                        && serverLevel.isEmptyBlock(pos)) {
+                    serverLevel.setBlock(pos, Blocks.BARRIER.defaultBlockState(), Block.UPDATE_NONE);
+                }
+            }
+        }
     }
 
     // 只需要保持item位置即可
@@ -98,7 +117,7 @@ public class Levelhandler {
         ClientUtils.playASHParticles(level, pos);
         // Player always dig it and we not get
         // Todo:Clean Water in future or clean tick
-        if (level.isEmptyBlock(pos)) {
+        if (level.isEmptyBlock(pos) || level.getBlockState(pos).is(Blocks.BARRIER)) {
             if (General.debug.get())
                 OneBlock.logger("Start Set at ", System.currentTimeMillis());
             var nowProgress = globalDataManager.getOrDefault(pos);
@@ -119,8 +138,8 @@ public class Levelhandler {
             } else {
                 if (stageHolder.isBegin()) {
                     if (!stage.isDisable_message()) {
-                        ClientUtils.tittlePlayerClean(server);
-                        ClientUtils.informNewStage(server, stage.getResName());
+                        ClientUtils.tittlePlayerClean(server, s -> nowProgress.isMember(s.getUUID()));
+                        NewEntryUtils.informNewStage(server, nowProgress, stage);
                     }
                     // reset the record when a new stage
                     nowProgress.cleanLocalCounter();
@@ -171,7 +190,7 @@ public class Levelhandler {
             } else {
                 int i = oneBlockSaveInstance.bedrockLastTime / 50;
                 if (oneBlockSaveInstance.bedrockLastTime % 50 == 0)
-                    ClientUtils.tittlePlayer(server, String.valueOf(i));
+                    ClientUtils.tittlePlayer(server, String.valueOf(i), s -> oneBlockSaveInstance.isMember(s.getUUID()));
                 oneBlockSaveInstance.updateBedrockLastTime();
                 globalDataManager.update(pos, oneBlockSaveInstance);
             }
@@ -196,5 +215,85 @@ public class Levelhandler {
             }
         }
 
+    }
+
+    @SubscribeEvent
+    public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+
+        ServerLevel level = player.level();
+        if (player.getRespawnConfig() != null) {
+            return;
+        }
+
+        var save = Levelhandler.getSaveData(level);
+
+        StageProgress progress = save.getByPlayer(player.getUUID());
+        if (progress == null) {
+            return;
+        }
+        BlockPos oneBlockPos = progress.getSpawnPos();
+        // int height = level.getHeight(Heightmap.Types.MOTION_BLOCKING, oneBlockPos);
+        // if (height != oneBlockPos.getY()) {
+        //     oneBlockPos = oneBlockPos.mutable().setY(height);
+        // }
+        player.teleportTo(
+                level,
+                oneBlockPos.getX() + 0.5,
+                oneBlockPos.getY() + 1,
+                oneBlockPos.getZ() + 0.5,
+                new HashSet<>(),
+                player.getYRot(),
+                player.getXRot(),
+                true
+        );
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+
+        MinecraftServer server = player.level().getServer();
+        if (!server.isSingleplayer()) {
+            return;
+        }
+        ServerLevel level = player.level();
+        if (level.dimension() != Level.OVERWORLD || !CommonSetUp.isOneBlockWorld(level)
+                || level.getGameTime() > 100) {
+            return;
+        }
+        CommonSetUp.createTeam(player, level.getRespawnData().pos());
+    }
+
+    @SubscribeEvent
+    public void inherit(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        MinecraftServer server = player.level().getServer();
+        if (!server.isSingleplayer()) {
+            return;
+        }
+
+        ServerLevel level = player.level();
+        GlobalDataManager data = GlobalDataManager.get(level);
+        if (data.hasTeam(player.getUUID())) {
+            return;
+        }
+        StageProgress nearestLegacyProgress = data.findNearestUnownedProgress(player.blockPosition());
+        if (nearestLegacyProgress == null) {
+            return;
+        }
+
+        nearestLegacyProgress.setOwner(player.getUUID());
+        nearestLegacyProgress.addMember(player.getUUID());
+
+        data.setDirty();
+
+        player.sendSystemMessage(Component.translatable("message.oneblock.team.inherited"));
     }
 }

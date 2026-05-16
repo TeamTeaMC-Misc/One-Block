@@ -8,6 +8,9 @@ import java.util.stream.Collectors;
 import com.google.gson.*;
 
 
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DynamicOps;
 import net.minecraft.core.BlockPos;
@@ -40,6 +43,26 @@ import xueluoanping.oneblock.util.Platform;
 public class StageManager extends SimplePreparableReloadListener<Map<Identifier, JsonElement>> {
     private static final Gson GSON = new GsonBuilder().setLenient()
             // .registerTypeHierarchyAdapter(Component.class, new Component.Serializer())
+            .registerTypeAdapter(Identifier.class, new TypeAdapter<Identifier>() {
+                @Override
+                public void write(JsonWriter out, Identifier value) throws IOException {
+                    if (value == null) {
+                        out.nullValue();
+                    } else {
+                        out.value(value.toString());
+                    }
+                }
+
+                @Override
+                public Identifier read(JsonReader in) throws IOException {
+                    if (in.peek() == JsonToken.NULL) {
+                        in.nextNull();
+                        return null;
+                    }
+
+                    return Identifier.tryParse(in.nextString());
+                }
+            })
             .create();
 
     // public static final network instance = new network(GSON, "stages.config");
@@ -168,7 +191,6 @@ public class StageManager extends SimplePreparableReloadListener<Map<Identifier,
     protected void apply(Map<Identifier, JsonElement> objects, ResourceManager manager, ProfilerFiller profiler) {
         OneBlock.logger("Hello Profile");
         STAGE_DATA_LIST.clear();
-        Gson gson = new GsonBuilder().create();
 
         var new_list = new ArrayList<StageData>();
         var additionalStageDataList = new ArrayList<StageData>();
@@ -177,7 +199,7 @@ public class StageManager extends SimplePreparableReloadListener<Map<Identifier,
         objects.forEach((res, json) -> {
             OneBlock.logger(json.toString(), res);
             if (res.getPath().contains("phases")) {
-                StageData stageData = gson.fromJson(json, StageData.class);
+                StageData stageData = GSON.fromJson(json, StageData.class);
                 // Check mods
                 if (stageData.getMods() != null) {
                     if (!Platform.isModsLoaded(stageData.getMods()))
@@ -189,9 +211,9 @@ public class StageManager extends SimplePreparableReloadListener<Map<Identifier,
                 else additionalStageDataList.add(stageData);
                 OneBlock.logger("Go on", res);
             } else if (res.toString().equals("oneblock:common/config")) {
-                oneBlockConfigHolder = gson.fromJson(json, OneBlockConfig.class);
+                oneBlockConfigHolder = GSON.fromJson(json, OneBlockConfig.class);
             } else if (res.getPath().equals("common/sub_config")) {
-                subStageConfigList.addAll(gson.fromJson(json, OneBlockSubConfig.class).getList());
+                subStageConfigList.addAll(GSON.fromJson(json, OneBlockSubConfig.class).getList());
             }
         });
 

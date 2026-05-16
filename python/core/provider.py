@@ -245,7 +245,7 @@ class ModifiedLootTableProvider(LootTableProvider):
         self.add_modified_loot(target, target[0].split(":")[-1], table)
 
     def run(self):
-        self.add(self.get_glm_path(), {"entries": self.glm_entries, "replace": False})
+        # self.add(self.get_glm_path(), {"entries": self.glm_entries, "replace": False})
         super().run()
 
 

@@ -7,7 +7,6 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.network.chat.ResolutionContext;
-import net.minecraft.network.chat.contents.NbtContents;
 import net.minecraft.network.protocol.game.ClientboundClearTitlesPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
@@ -22,7 +21,10 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import xueluoanping.oneblock.OneBlock;
+import xueluoanping.oneblock.api.StageProgress;
 import xueluoanping.oneblock.client.OneBlockTranslator;
+
+import java.util.function.Predicate;
 
 public class ClientUtils {
 
@@ -49,9 +51,15 @@ public class ClientUtils {
         }
     }
 
+
     public static void informPlayer(MinecraftServer server, Component component) {
+        informPlayer(server, component, (s) -> true);
+    }
+
+    public static void informPlayer(MinecraftServer server, Component component, Predicate<ServerPlayer> serverPlayerPredicate) {
         try {
             for (ServerPlayer serverplayer : server.getPlayerList().getPlayers()) {
+                if (!serverPlayerPredicate.test(serverplayer)) continue;
                 serverplayer.sendSystemMessage(ComponentUtils.resolve(ResolutionContext.builder()
                                 .withSource(server.createCommandSourceStack())
                                 .withEntityOverride(serverplayer)
@@ -72,19 +80,20 @@ public class ClientUtils {
         informPlayer(server, component);
     }
 
-    public static void tittlePlayer(MinecraftServer server, String component) {
+    public static void tittlePlayer(MinecraftServer server, String component, Predicate<ServerPlayer> serverPlayerPredicate) {
         // ClientboundSetTitleTextPacket clientboundSetTitleTextPacket = new ClientboundSetTitleTextPacket(Component.translatable(component));
         ClientboundSetTitleTextPacket clientboundSetTitleTextPacket = new ClientboundSetTitleTextPacket(Component.translatable(component));
-
         for (ServerPlayer serverplayer : server.getPlayerList().getPlayers()) {
-            serverplayer.connection.send(clientboundSetTitleTextPacket);
+            if (serverPlayerPredicate.test(serverplayer))
+                serverplayer.connection.send(clientboundSetTitleTextPacket);
         }
     }
 
-    public static void tittlePlayerClean(MinecraftServer server) {
+    public static void tittlePlayerClean(MinecraftServer server, Predicate<ServerPlayer> serverPlayerPredicate) {
         ClientboundClearTitlesPacket clientboundSetTitleTextPacket = new ClientboundClearTitlesPacket(false);
         for (ServerPlayer serverplayer : server.getPlayerList().getPlayers()) {
-            serverplayer.connection.send(clientboundSetTitleTextPacket);
+            if (serverPlayerPredicate.test(serverplayer))
+                serverplayer.connection.send(clientboundSetTitleTextPacket);
         }
     }
 
