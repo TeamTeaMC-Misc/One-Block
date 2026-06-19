@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.AbortableIterationConsumer;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -202,7 +203,7 @@ public class Levelhandler {
                 double y = level.isWaterAt(pos) ? pos.getY() + 1 + 0.875 : pos.getY() + 1;
                 double z = pos.getZ() + 0.5;
                 var aabb = new AABB(new Vec3(x - 1.5, y - 1, z - 1.5), new Vec3(x + 1.5, y + 1.25, z + 1.5));
-                level.getEntities().get(EntityType.ITEM, aabb, itemEntity -> {
+                level.getEntities().get(EntityTypes.ITEM, aabb, itemEntity -> {
                     // if (entity instanceof ItemEntity itemEntity)
                     {
                         itemEntity.syncPacketPositionCodec(x, y, z);

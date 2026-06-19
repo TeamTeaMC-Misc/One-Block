@@ -119,7 +119,7 @@ public class ClientUtils {
         float volume = 1.0f;
         float pitch = 1.0f;
         float minVolume = 0.0f;
-        Vec3 vec3_base = basePos.getCenter();
+        Vec3 vec3_base = Vec3.atCenterOf(basePos);
         Holder<SoundEvent> holder = Holder.direct(SoundEvent.createVariableRangeEvent(Identifier.parse(select)));
         SoundSource soundSource = SoundSource.BLOCKS;
         try {
@@ -151,7 +151,7 @@ public class ClientUtils {
             double d2 = vec3_base.y() - serverplayer.getY();
             double d3 = vec3_base.z() - serverplayer.getZ();
             double d4 = d1 * d1 + d2 * d2 + d3 * d3;
-            Vec3 vec3 = basePos.getCenter();
+            Vec3 vec3 = Vec3.atCenterOf(basePos);
             float f = volume;
             if (d4 > d0) {
                 if (minVolume <= 0.0F) {
