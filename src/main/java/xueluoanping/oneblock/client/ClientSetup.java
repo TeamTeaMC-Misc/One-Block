@@ -17,6 +17,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import xueluoanping.oneblock.ModContents;
 import xueluoanping.oneblock.OneBlock;
+import xueluoanping.oneblock.config.General;
 
 import java.util.Optional;
 
@@ -41,6 +42,8 @@ public class ClientSetup {
 
     @SubscribeEvent
     public static void onScreenInit(ScreenEvent.Init.Post event) {
+        if (!General.worldSelect.getAsBoolean())
+            return;
         if (!(event.getScreen() instanceof CreateWorldScreen screen)) {
             return;
         }

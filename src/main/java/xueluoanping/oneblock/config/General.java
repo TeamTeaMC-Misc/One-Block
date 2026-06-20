@@ -18,6 +18,7 @@ import java.util.regex.PatternSyntaxException;
 public class General {
     public static ModConfigSpec COMMON_CONFIG;
     public static ModConfigSpec.BooleanValue debug;
+    public static ModConfigSpec.BooleanValue worldSelect;
     public static ModConfigSpec.BooleanValue collectItemNearby;
     public static ModConfigSpec.BooleanValue addMobName;
     public static ModConfigSpec.BooleanValue allowStructure;
@@ -49,6 +50,10 @@ public class General {
         ModConfigSpec.Builder COMMON_BUILDER = new ModConfigSpec.Builder();
         COMMON_BUILDER.comment("Debug settings").push("Debug");
         debug = COMMON_BUILDER.comment("Set false to stop output dig log.").define("Log", false);
+
+        worldSelect = COMMON_BUILDER.comment("Set the one-block sky island as the default world type.")
+                .define("WorldTypeSelect", true);
+
         COMMON_BUILDER.pop();
 
         COMMON_BUILDER.comment("Play settings").push("Play");
