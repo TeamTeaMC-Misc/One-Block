@@ -50,10 +50,10 @@ public class General {
         ModConfigSpec.Builder COMMON_BUILDER = new ModConfigSpec.Builder();
         COMMON_BUILDER.comment("Debug settings").push("Debug");
         debug = COMMON_BUILDER.comment("Set false to stop output dig log.").define("Log", false);
-        COMMON_BUILDER.pop();
-
-        worldSelect= COMMON_BUILDER.comment("Set the one-block sky island as the default world type.")
+        worldSelect = COMMON_BUILDER.comment("Set the one-block sky island as the default world type.")
                 .define("WorldTypeSelect", true);
+        
+        COMMON_BUILDER.pop();
 
         COMMON_BUILDER.comment("Play settings").push("Play");
         collectItemNearby = COMMON_BUILDER.comment("Set true to collect item dropped nearby the oneblock but may cause some delay.")
