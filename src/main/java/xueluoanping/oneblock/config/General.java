@@ -17,6 +17,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class General {
     public static ModConfigSpec COMMON_CONFIG;
+    public static ModConfigSpec.BooleanValue worldSelect;
     public static ModConfigSpec.BooleanValue debug;
     public static ModConfigSpec.BooleanValue collectItemNearby;
     public static ModConfigSpec.BooleanValue addMobName;
@@ -50,6 +51,9 @@ public class General {
         COMMON_BUILDER.comment("Debug settings").push("Debug");
         debug = COMMON_BUILDER.comment("Set false to stop output dig log.").define("Log", false);
         COMMON_BUILDER.pop();
+
+        worldSelect= COMMON_BUILDER.comment("Set the one-block sky island as the default world type.")
+                .define("WorldTypeSelect", true);
 
         COMMON_BUILDER.comment("Play settings").push("Play");
         collectItemNearby = COMMON_BUILDER.comment("Set true to collect item dropped nearby the oneblock but may cause some delay.")
