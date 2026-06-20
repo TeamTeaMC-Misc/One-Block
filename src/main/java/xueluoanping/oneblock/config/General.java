@@ -52,7 +52,7 @@ public class General {
         debug = COMMON_BUILDER.comment("Set false to stop output dig log.").define("Log", false);
         worldSelect = COMMON_BUILDER.comment("Set the one-block sky island as the default world type.")
                 .define("WorldTypeSelect", true);
-        
+
         COMMON_BUILDER.pop();
 
         COMMON_BUILDER.comment("Play settings").push("Play");
